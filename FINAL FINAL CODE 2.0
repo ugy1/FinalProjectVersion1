@@ -1,0 +1,365 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
+
+public class Main {
+    private static Map<String, Boolean> timeSlotStatus = new HashMap<>();
+    private static JTextField nameField;
+    private static JTextField emailField;
+    private static JTextField phoneField;
+    private static JTextField addressField;
+    private static JLabel errorMessage;
+    private static JLabel thankYouMessage;
+    private static JButton[] timeButtons;
+    private static JComboBox<String> dateComboBox;
+    private static String selectedDate;
+    private static String selectedTimeSlot;
+    private static JLabel bookingStatusLabel;
+    private static String userEmail; // Store the user's email
+
+    public static void main(String[] args) {
+        // Initialize the time slots with availability
+        initializeTimeSlots();
+
+        // Create main frame
+        JFrame frame = new JFrame("Blinds Consultation Booking System");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(600, 400);
+
+        // White background
+        frame.getContentPane().setBackground(Color.WHITE);
+
+        // Create the tabbed pane
+        JTabbedPane tabbedPane = new JTabbedPane();
+
+        // Create welcome panel
+        JPanel welcomePanel = createWelcomePanel(tabbedPane);
+        tabbedPane.addTab("Welcome", welcomePanel);
+
+        // Create "Your Information" panel
+        JPanel infoPanel = createInfoPanel(tabbedPane);
+        tabbedPane.addTab("Your Information", infoPanel);
+
+        // Create "Booking" panel
+        JPanel bookingPanel = createBookingPanel(tabbedPane);
+        tabbedPane.addTab("Booking", bookingPanel);
+
+        // Create "Confirmation" panel
+        JPanel confirmationPanel = createConfirmationPanel();
+        tabbedPane.addTab("Confirmation", confirmationPanel);
+
+        // Add the tabbed pane to the frame
+        frame.add(tabbedPane);
+
+        // Display
+        frame.setVisible(true);
+    }
+
+    private static JPanel createWelcomePanel(JTabbedPane tabbedPane) {
+        JPanel welcomePanel = new JPanel();
+        welcomePanel.setLayout(new BorderLayout(10, 10));
+        welcomePanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        welcomePanel.setBackground(Color.WHITE);
+
+        JLabel titleLabel = new JLabel("Blinds Consultation Booking System", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 28));
+        welcomePanel.add(titleLabel, BorderLayout.NORTH);
+
+        JLabel explanationLabel = new JLabel(explainProgram(), SwingConstants.LEFT);
+        explanationLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+        welcomePanel.add(explanationLabel, BorderLayout.CENTER);
+
+        JButton continueButton = new JButton("Continue");
+        continueButton.setFont(new Font("Arial", Font.PLAIN, 18));
+        continueButton.setPreferredSize(new Dimension(150, 40));
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.add(continueButton);
+        welcomePanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Add action listener to continue button
+        continueButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                tabbedPane.setSelectedIndex(1); // Switch to "Your Information" tab
+            }
+        });
+
+        return welcomePanel;
+    }
+
+    private static JPanel createInfoPanel(JTabbedPane tabbedPane) {
+        JPanel infoPanel = new JPanel();
+        infoPanel.setLayout(new GridBagLayout());
+        infoPanel.setBackground(Color.WHITE);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        JLabel infoLabel = new JLabel("Your Information", SwingConstants.CENTER);
+        infoLabel.setFont(new Font("Arial", Font.PLAIN, 18));
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        infoPanel.add(infoLabel, gbc);
+
+        // Name input
+        gbc.gridy++;
+        gbc.gridwidth = 1;
+        infoPanel.add(new JLabel("Name:"), gbc);
+        nameField = new JTextField(20);
+        gbc.gridx = 1;
+        infoPanel.add(nameField, gbc);
+
+        // Email input
+        gbc.gridx = 0;
+        gbc.gridy++;
+        infoPanel.add(new JLabel("Email:"), gbc);
+        emailField = new JTextField(20);
+        gbc.gridx = 1;
+        infoPanel.add(emailField, gbc);
+
+        // Phone number input
+        gbc.gridx = 0;
+        gbc.gridy++;
+        infoPanel.add(new JLabel("Phone Number:"), gbc);
+        phoneField = new JTextField(20);
+        gbc.gridx = 1;
+        infoPanel.add(phoneField, gbc);
+
+        // Address input
+        gbc.gridx = 0;
+        gbc.gridy++;
+        infoPanel.add(new JLabel("Address:"), gbc);
+        addressField = new JTextField(20);
+        gbc.gridx = 1;
+        infoPanel.add(addressField, gbc);
+
+        // Submit button
+        JButton submitButton = new JButton("Submit");
+        gbc.gridx = 0;
+        gbc.gridy++;
+        gbc.gridwidth = 2;
+        infoPanel.add(submitButton, gbc);
+
+        // Error message label
+        errorMessage = new JLabel("", SwingConstants.CENTER);
+        errorMessage.setForeground(Color.RED);
+        gbc.gridy++;
+        infoPanel.add(errorMessage, gbc);
+
+        // Thank you message label
+        thankYouMessage = new JLabel("", SwingConstants.CENTER);
+        gbc.gridy++;
+        infoPanel.add(thankYouMessage, gbc);
+
+        // Add action listener to submit button
+        submitButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Reset messages
+                errorMessage.setText("");
+                thankYouMessage.setText("");
+
+                if (!checkNameNotEmpty() || !validateEmail() || !validatePhoneNumber() || !checkAddressNotEmpty()) {
+                    return;
+                }
+
+                // Store user email
+                userEmail = emailField.getText().trim();
+
+                // If all inputs are valid
+                displayThankYouMessage();
+                tabbedPane.setSelectedIndex(2); // Switch to "Booking" tab
+            }
+        });
+
+        return infoPanel;
+    }
+
+    private static JPanel createBookingPanel(JTabbedPane tabbedPane) {
+        JPanel bookingPanel = new JPanel();
+        bookingPanel.setLayout(new BorderLayout(10, 10));
+        bookingPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        bookingPanel.setBackground(Color.WHITE);
+
+        JLabel bookingTitleLabel = new JLabel("Select a Date and Time for Consultation", SwingConstants.CENTER);
+        bookingTitleLabel.setFont(new Font("Arial", Font.BOLD, 22));
+        bookingPanel.add(bookingTitleLabel, BorderLayout.NORTH);
+
+        JPanel datePanel = new JPanel();
+        datePanel.setBackground(Color.WHITE);
+        JLabel dateLabel = new JLabel("Select Date:");
+        dateLabel.setFont(new Font("Arial", Font.PLAIN, 18));
+        dateComboBox = new JComboBox<>();
+        selectDate();
+        datePanel.add(dateLabel);
+        datePanel.add(dateComboBox);
+        bookingPanel.add(datePanel, BorderLayout.NORTH);
+
+        JPanel timePanel = new JPanel();
+        timePanel.setBackground(Color.WHITE);
+        timePanel.setLayout(new GridLayout(5, 1, 10, 10));
+
+        String[] timeSlots = {"9:00-10:30", "12:00-1:30", "2:00-3:30", "4:00-5:30"};
+        timeButtons = new JButton[timeSlots.length];
+
+        displayAvailableTimes(timePanel, timeSlots);
+
+        bookingPanel.add(timePanel, BorderLayout.CENTER);
+
+        bookingStatusLabel = new JLabel("", SwingConstants.CENTER);
+        bookingStatusLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+        bookingPanel.add(bookingStatusLabel, BorderLayout.SOUTH);
+
+        dateComboBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                displayAvailableTimes(timePanel, timeSlots);
+            }
+        });
+
+        // Continue button
+        JButton continueButton = new JButton("Continue");
+        continueButton.setFont(new Font("Arial", Font.PLAIN, 18));
+        continueButton.setPreferredSize(new Dimension(150, 40));
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.add(continueButton);
+        bookingPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Add action listener to continue button
+        continueButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (selectedTimeSlot == null) {
+                    bookingStatusLabel.setText("Please select a time slot before continuing.");
+                } else {
+                    tabbedPane.setSelectedIndex(3); // Switch to "Confirmation" tab
+                }
+            }
+        });
+
+        return bookingPanel;
+    }
+
+    private static JPanel createConfirmationPanel() {
+        JPanel confirmationPanel = new JPanel();
+        confirmationPanel.setLayout(new BorderLayout(10, 10));
+        confirmationPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        confirmationPanel.setBackground(Color.WHITE);
+
+        JLabel confirmationTitleLabel = new JLabel("Confirmation", SwingConstants.CENTER);
+        confirmationTitleLabel.setFont(new Font("Arial", Font.BOLD, 22));
+        confirmationPanel.add(confirmationTitleLabel, BorderLayout.NORTH);
+
+        JLabel confirmationMessageLabel = new JLabel("", SwingConstants.CENTER);
+        confirmationMessageLabel.setFont(new Font("Arial", Font.PLAIN, 18));
+        confirmationPanel.add(confirmationMessageLabel, BorderLayout.CENTER);
+
+        confirmationMessageLabel.setText("<html>Thank you for booking with Blinds Consultation.<br>"
+                + "A confirmation email has been sent to " + (userEmail != null ? userEmail : "your email") + ".<br>"
+                + "Your consultation is scheduled for " + (selectedDate != null ? selectedDate : "selected date") + " at " + (selectedTimeSlot != null ? selectedTimeSlot : "selected time") + ".</html>");
+
+        return confirmationPanel;
+    }
+
+    private static void initializeTimeSlots() {
+        // Example of booked slots
+        timeSlotStatus.put("2024-06-03 9:00-10:30", true);
+        // Add more booked slots as needed
+    }
+
+    private static boolean checkNameNotEmpty() {
+        String name = nameField.getText().trim();
+        if (name.isEmpty()) {
+            errorMessage.setText("Name cannot be empty");
+            return false;
+        }
+        return true;
+    }
+
+    private static boolean validateEmail() {
+        String email = emailField.getText().trim();
+        if (!email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$")) {
+            errorMessage.setText("Invalid email address");
+            return false;
+        }
+        return true;
+    }
+
+    private static boolean validatePhoneNumber() {
+        String phone = phoneField.getText().trim();
+        if (!phone.matches("\\d{10}")) {
+            errorMessage.setText("Phone number must be 10 digits long");
+            return false;
+        }
+        return true;
+    }
+
+    private static boolean checkAddressNotEmpty() {
+        String address = addressField.getText().trim();
+        if (address.isEmpty()) {
+            errorMessage.setText("Address cannot be empty");
+            return false;
+        }
+        return true;
+    }
+
+    private static void displayThankYouMessage() {
+        thankYouMessage.setText("Thank you for providing your information!");
+    }
+
+    private static void selectDate() {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDate startDate = LocalDate.now();
+        for (int i = 0; i < 7; i++) {
+            dateComboBox.addItem(startDate.plusDays(i).format(formatter));
+        }
+    }
+
+    private static void displayAvailableTimes(JPanel timePanel, String[] timeSlots) {
+        timePanel.removeAll();
+        selectedDate = (String) dateComboBox.getSelectedItem();
+        for (int i = 0; i < timeSlots.length; i++) {
+            timeButtons[i] = new JButton(timeSlots[i]);
+            timeButtons[i].setFont(new Font("Arial", Font.PLAIN, 18));
+            timeButtons[i].addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    selectedTimeSlot = ((JButton) e.getSource()).getText();
+                    for (JButton button : timeButtons) {
+                        button.setEnabled(false);
+                        button.setBackground(Color.DARK_GRAY);
+                    }
+                    ((JButton) e.getSource()).setBackground(Color.LIGHT_GRAY);
+                    bookingStatusLabel.setText("Time slot booked. Press Continue.");
+                }
+            });
+            selectTime(timeButtons[i], selectedDate, timeSlots[i]);
+            timePanel.add(timeButtons[i]);
+        }
+        timePanel.revalidate();
+        timePanel.repaint();
+    }
+
+    private static void selectTime(JButton button, String selectedDate, String timeSlot) {
+        String dateTimeKey = selectedDate + " " + timeSlot;
+        if (timeSlotStatus.getOrDefault(dateTimeKey, false)) {
+            button.setEnabled(false);
+            button.setBackground(Color.DARK_GRAY);
+        } else {
+            button.setEnabled(true);
+            button.setBackground(Color.WHITE);
+        }
+    }
+
+    private static String explainProgram() {
+        return "<html> Hello and Welcome!<br><br> You can now easily schedule consultations for blinds and curtains installations.<br><br>Please press Continue to proceed to the user information page.</html>";
+    }
+}
